@@ -2,100 +2,169 @@ import streamlit as st
 import requests
 
 BASE_URL = "https://hospital-management-system-u.onrender.com"
-st.set_page_config(page_title="Hospital Management System")
 
 st.title("🏥 Hospital Management System")
 
-menu = st.sidebar.selectbox("Navigation",["Home","View All Patients","Search Patient","Update Patient","Delete Patient"])
+menu = st.sidebar.selectbox(
+    "Select Option",
+    [
+        "Home",
+        "View All Patients",
+        "Search Patient",
+        "Register New Patient",
+        "Update Patient",
+        "Delete Patient"
+    ]
+)
 
-
-# HOME PAGE
+# ---------------- HOME ----------------
 if menu == "Home":
-
     st.header("Welcome")
+    st.write("Hospital Management System using Streamlit and FastAPI.")
+    st.write("Use the sidebar to manage patient records.")
 
-    st.write("This Hospital Management System helps manage patient records.")
-
-    st.success("Welcome Receptionist!")
-
-# VIEW ALL PATIENTS
+# ---------------- VIEW ----------------
 elif menu == "View All Patients":
-
     st.header("All Patients")
 
     if st.button("Load Patients"):
-
         response = requests.get(f"{BASE_URL}/patients")
 
         if response.status_code == 200:
-
             data = response.json()
+            st.write("Total Patients:", len(data))
+            st.dataframe(data)
+        else:
+            st.error("Failed to load patients.")
 
-            if isinstance(data, list) and len(data) > 0:
-
-                st.write(f"Total Patients: {len(data)}")
-
-                for patient in data:
-                    st.json(patient)
-                    st.write("----------------------------")
-
-            else:
-                st.warning("No patients found")
-
-# SEARCH PATIENT
+# ---------------- SEARCH ----------------
 elif menu == "Search Patient":
+    st.header("Search Patient")
 
-    st.header("Search Patient By ID")
-
-    patient_id = st.number_input("Enter Patient ID",min_value=1,step=1)
+    pid = st.number_input("Patient ID", min_value=1, step=1)
 
     if st.button("Search"):
+        response = requests.get(f"{BASE_URL}/patients/{pid}")
 
-        response = requests.get(
-            f"{BASE_URL}/patients/{patient_id}")
-
-        data = response.json()
-
-        if "id" in data:
-            st.success("Patient Found")
-            st.json(data)
+        if response.status_code == 200:
+            st.json(response.json())
         else:
-            st.error(data["message"])
+            st.error("Patient not found.")
 
-# UPDATE PATIENT
+# ---------------- REGISTER ----------------
+elif menu == "Register New Patient":
+    st.header("Register Patient")
+
+    pid = st.number_input("ID", min_value=1)
+    name = st.text_input("Patient Name")
+    age = st.number_input("Age", min_value=1)
+
+    gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+
+    blood = st.selectbox(
+        "Blood Group",
+        ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]
+    )
+
+    disease = st.text_input("Disease")
+    doctor = st.text_input("Doctor")
+
+    room = st.selectbox(
+        "Room Type",
+        ["General", "Semi-Private", "Private", "ICU"]
+    )
+
+    status = st.selectbox(
+        "Admission Status",
+        ["Admitted", "Discharged", "Under Observation"]
+    )
+
+    if st.button("Register"):
+        patient = {
+            "id": pid,
+            "patient_name": name,
+            "age": age,
+            "gender": gender,
+            "blood_group": blood,
+            "disease": disease,
+            "doctor": doctor,
+            "room_type": room,
+            "admission_status": status
+        }
+
+        response = requests.post(f"{BASE_URL}/patients", json=patient)
+
+        if response.status_code == 200:
+            st.success("Patient Registered Successfully")
+            st.json(response.json())
+        else:
+            st.error("Registration Failed")
+
+# ---------------- UPDATE ----------------
 elif menu == "Update Patient":
-
     st.header("Update Patient")
 
-    patient_id = st.number_input("Patient ID",min_value=1,step=1)
+    pid = st.number_input("Patient ID", min_value=1)
 
+    name = st.text_input("Patient Name")
+    age = st.number_input("Age", min_value=1)
 
-    updated_data = {"patient_name": st.text_input("Patient Name"),"age": st.number_input("Age", min_value=1, step=1),"gender": st.selectbox("Gender",["Male", "Female", "Other"]),"blood_group": st.selectbox("Blood Group", ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]),"disease": st.text_input("Disease"),"doctor": st.text_input("Doctor"),"room_type": st.selectbox("Room Type",["General", "Semi-Private", "Private", "ICU"]),"admission_status": st.selectbox("Admission Status",["Admitted", "Discharged", "Under Observation"])}
-        
+    gender = st.selectbox("Gender", ["Male", "Female", "Other"])
 
-    if st.button("Update Patient"):
+    blood = st.selectbox(
+        "Blood Group",
+        ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]
+    )
 
-        response = requests.put(f"{BASE_URL}/patients/{patient_id}",json=updated_data)
-        
+    disease = st.text_input("Disease")
+    doctor = st.text_input("Doctor")
 
-        st.success(response.json()["message"])
+    room = st.selectbox(
+        "Room Type",
+        ["General", "Semi-Private", "Private", "ICU"]
+    )
 
-# DELETE PATIENT
+    status = st.selectbox(
+        "Admission Status",
+        ["Admitted", "Discharged", "Under Observation"]
+    )
+
+    if st.button("Update"):
+        patient = {
+            "patient_name": name,
+            "age": age,
+            "gender": gender,
+            "blood_group": blood,
+            "disease": disease,
+            "doctor": doctor,
+            "room_type": room,
+            "admission_status": status
+        }
+
+        response = requests.put(
+            f"{BASE_URL}/patients/{pid}",
+            json=patient
+        )
+
+        if response.status_code == 200:
+            st.success("Patient Updated Successfully")
+            st.json(response.json())
+        else:
+            st.error("Patient Not Found")
+
+# ---------------- DELETE ----------------
 elif menu == "Delete Patient":
-
     st.header("Delete Patient")
 
-    patient_id = st.number_input("Patient ID",min_value=1,step=1)
-    
+    pid = st.number_input("Patient ID", min_value=1)
 
-    confirm = st.checkbox("I confirm patient deletion")
-    
+    confirm = st.checkbox("I confirm deletion")
 
     if st.button("Delete") and confirm:
+        response = requests.delete(f"{BASE_URL}/patients/{pid}")
 
-        response = requests.delete(f"{BASE_URL}/patients/{patient_id}")
-        
-
-        data = response.json()
-
-        st.success(data["message"])
+        if response.status_code == 200:
+            st.success("Patient Deleted Successfully")
+            st.json(response.json())
+        else:
+            st.error("Patient Not Found")
